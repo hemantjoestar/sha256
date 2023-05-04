@@ -1,22 +1,8 @@
+use sha::sha::sha_traits::SHABitOperations;
 use integer::u128_wrapping_add;
 use array::ArrayTrait;
 use array::SpanTrait;
-use sha::sha::sha_traits::SHABitOperations;
-use sha::sha::sha_traits::SHA;
-use sha::sha::sha_traits::Hasher;
 
-impl U128SHA of SHA<u128> {
-    fn new() -> Hasher<u128> {
-        let mut input = ArrayTrait::new();
-        Hasher { input }
-    }
-    fn update(ref self: Hasher<u128>, input: Span<felt252>) {}
-    fn finalize(self: Hasher<u128>) -> Array<felt252> {
-        let mut output = ArrayTrait::new();
-        output.append(123);
-        output
-    }
-}
 impl U128Bit32Operations of SHABitOperations<u128> {
     fn wrapping_add(self: u128, other: u128) -> u128 {
         u128_wrapping_add(self, other) & 0xFFFFFFFF
@@ -27,7 +13,6 @@ impl U128Bit32Operations of SHABitOperations<u128> {
     fn shr_2(self: u128) -> u128 {
         self / 0x4
     }
-
     fn rr_2(self: u128) -> u128 {
         (self & 0xFFFFFFFC) / 0x4 | (self & 0x3) * 0x40000000
     }
