@@ -5,11 +5,11 @@ use array::SpanTrait;
 use serde::Serde;
 use option::OptionTrait;
 
-impl SHAImpl<
-    T, impl TSerde: Serde<T>, impl TDrop: Drop<T>, impl TSHABitOperations: SHABitOperations<T>
-> of SHA<T> {
+impl SHAImpl<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>> of SHA<T> {
     fn new(ref input: Span<felt252>) -> Hasher<T> {
-        Serde::<Hasher<T>>::deserialize(ref input).unwrap()
+        // Serde::<Hasher<T>>::deserialize(ref input).unwrap()
+        let tmp = TSerde::<T>::deserialize(ref input).unwrap();
+        Hasher { input: tmp }
     }
     // fn update(ref self: Hasher<T>, input: Span<felt252>) {}
     fn finalize(self: Hasher<T>) -> Array<felt252> {
@@ -33,6 +33,37 @@ impl SHAImpl<
     }
 }
 
+impl TSerde<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>> of Serde<Array<T>> {
+    fn serialize(self: @Array<T>, ref output: Array<felt252>) {
+        self.len().serialize(ref output);
+        serialize_array_helper_1(self.span(), ref output);
+    }
+    fn deserialize(ref serialized: Span<felt252>) -> Option<Array<T>> {
+        let mut arr = ArrayTrait::new();
+        deserialize_array_helper_1(ref serialized, arr)
+    }
+}
+fn deserialize_array_helper_1<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(
+    ref serialized: Span<felt252>, mut curr_output: Array<T>
+) -> Option<Array<T>> {
+    if serialized.len() == 0 {
+        return Option::Some(curr_output);
+    }
+    curr_output.append(TSerde::deserialize(ref serialized)?);
+    deserialize_array_helper_1(ref serialized, curr_output)
+}
+
+fn serialize_array_helper_1<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(
+    mut input: Span<T>, ref output: Array<felt252>
+) {
+    match input.pop_front() {
+        Option::Some(value) => {
+            value.serialize(ref output);
+            serialize_array_helper_1(input, ref output);
+        },
+        Option::None(_) => {},
+    }
+}
 #[derive(Drop)]
 struct Hasher<T> {
     input: Array<T>, 
