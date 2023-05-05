@@ -114,7 +114,6 @@ trait SHABitOperations<T> {
     fn shl_30(self: T) -> T;
     fn shr_2(self: T) -> T;
     fn rr_2(self: T) -> T;
-    fn rr_2(self: T) -> T;
     fn rr_6(self: T) -> T;
     fn rr_7(self: T) -> T;
     fn rr_11(self: T) -> T;

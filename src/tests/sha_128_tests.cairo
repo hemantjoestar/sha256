@@ -76,12 +76,14 @@ fn prepare_message_schedule() {
             ^ (*(joined_bytes[index - 2_usize])).rr_19()
             ^ ((*(joined_bytes[index - 2_usize])) / 0x400_u128);
         // tmp =
-        joined_bytes.append(
-            (*(joined_bytes[index
-                - 16_usize])).wrapping_add(
-                    sigma_1.wrapping_add((*(joined_bytes[index - 7_usize])).wrapping_add(sigma_2))
-                )
-        );
+        joined_bytes
+            .append(
+                (*(joined_bytes[index - 16_usize]))
+                    .wrapping_add(
+                        sigma_1
+                            .wrapping_add((*(joined_bytes[index - 7_usize])).wrapping_add(sigma_2))
+                    )
+            );
         // joined_bytes.append(tmp);
         index = index + 1;
     };
