@@ -13,7 +13,7 @@ use clone::Clone;
 
 // let test_str = b"starknet";
 #[test]
-#[available_gas(1000000000)]
+#[available_gas(200000000)]
 fn test_less_than_512_bits() {
     let mut input = ArrayTrait::new();
     input.append(0x73746172);
@@ -45,7 +45,7 @@ fn test_less_than_512_bits() {
 
 // let test_str = b"Cairo is the first Turing-complete language for creating provable programs for general computation.";
 #[test]
-#[available_gas(1000000000)]
+#[available_gas(200000000)]
 fn test_more_than_512_bits() {
     let mut input = ArrayTrait::new();
     input.append(0x43616972);
@@ -93,7 +93,7 @@ fn test_more_than_512_bits() {
 
 // Cairo Wwhitepaper Abstract
 #[test]
-#[available_gas(1000000000)]
+#[available_gas(400000000)]
 fn should_pass() {
     let mut input = ArrayTrait::new();
     input.append(0x57652070);

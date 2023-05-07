@@ -1,24 +1,22 @@
 use sha::sha::sha_traits::SHABitOperations;
 use integer::u128_wrapping_add;
 use array::ArrayTrait;
-use array::SpanTrait;
 use serde::Serde;
 use traits::Into;
 use traits::TryInto;
 use sha::sha::sha_constants::load_round_constants;
 use sha::sha::sha_constants::load_hash_constants;
 use traits::BitNot;
-use debug::PrintTrait;
-use testing::get_available_gas;
-use box::BoxTrait;
 use option::OptionTrait;
 use clone::Clone;
 
 fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
+    assert(bytes.len() % 16_usize == 0, 'byteslen != 16*8 bytes multiple');
+
+    // Using Span resolved issue. check TODO in compression section
+    let round_constants = load_round_constants();
     let mut hash_values = load_hash_constants();
     let mut working_hash = hash_values.clone();
-
-    assert(bytes.len() % 16_usize == 0, 'byteslen != 16*8 bytes multiple');
 
     let loop_until = bytes.len() / 16_usize;
     let mut outer_loop: usize = 0;
@@ -28,7 +26,6 @@ fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
             break ();
         }
 
-        working_hash = hash_values.clone();
         let mut joined_bytes = ArrayTrait::<u128>::new();
         // let mut joined_bytes=SHASerde::deserialize(ref throw).unwrap();
         let mut load_bytes_index: usize = 0;
@@ -39,6 +36,7 @@ fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
             joined_bytes.append(bytes.pop_front().unwrap().try_into().unwrap());
             load_bytes_index = load_bytes_index + 1;
         };
+
         let mut message_loop_index: usize = 16;
         loop {
             if message_loop_index == 64_usize {
@@ -64,8 +62,11 @@ fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
             message_loop_index = message_loop_index + 1;
         };
 
+        working_hash = hash_values.clone();
         let mut compression_loop_index = 0_usize;
-        let round_constants = load_round_constants();
+        // TODO: Used Span. need to measure if better against Array. Also span resolved issue below
+        // TODO: Not needed to be loaded repeatedly. but loop moved problem. unroll didnt work
+        // let round_constants = load_round_constants();
         loop {
             if compression_loop_index == 64_usize {
                 break ();
@@ -181,35 +182,36 @@ impl U128Bit32Operations of SHABitOperations<u128> {
         (self & 0xFE000000) / 0x2000000 | (self & 0x1FFFFFF) * 0x80
     }
 }
+// impl SHASerde of Serde<Array<u128>> {
+//     fn serialize(self: @Array<u128>, ref output: Array<felt252>) {
+//         self.len().serialize(ref output);
+//         serialize_array_helper(self.span(), ref output);
+//     }
+//     fn deserialize(ref serialized: Span<felt252>) -> Option<Array<u128>> {
+//         let mut arr = ArrayTrait::new();
+//         deserialize_array_helper(ref serialized, arr)
+//     }
+// }
+// fn deserialize_array_helper<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(
+//     ref serialized: Span<felt252>, mut curr_output: Array<T>
+// ) -> Option<Array<T>> {
+//     if serialized.len() == 0 {
+//         return Option::Some(curr_output);
+//     }
+//     curr_output.append(TSerde::deserialize(ref serialized)?);
+//     deserialize_array_helper(ref serialized, curr_output)
+// }
 
-impl SHASerde of Serde<Array<u128>> {
-    fn serialize(self: @Array<u128>, ref output: Array<felt252>) {
-        self.len().serialize(ref output);
-        serialize_array_helper(self.span(), ref output);
-    }
-    fn deserialize(ref serialized: Span<felt252>) -> Option<Array<u128>> {
-        let mut arr = ArrayTrait::new();
-        deserialize_array_helper(ref serialized, arr)
-    }
-}
-fn deserialize_array_helper<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(
-    ref serialized: Span<felt252>, mut curr_output: Array<T>
-) -> Option<Array<T>> {
-    if serialized.len() == 0 {
-        return Option::Some(curr_output);
-    }
-    curr_output.append(TSerde::deserialize(ref serialized)?);
-    deserialize_array_helper(ref serialized, curr_output)
-}
+// fn serialize_array_helper<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(
+//     mut input: Span<T>, ref output: Array<felt252>
+// ) {
+//     match input.pop_front() {
+//         Option::Some(value) => {
+//             value.serialize(ref output);
+//             serialize_array_helper(input, ref output);
+//         },
+//         Option::None(_) => {},
+//     }
+// }
 
-fn serialize_array_helper<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(
-    mut input: Span<T>, ref output: Array<felt252>
-) {
-    match input.pop_front() {
-        Option::Some(value) => {
-            value.serialize(ref output);
-            serialize_array_helper(input, ref output);
-        },
-        Option::None(_) => {},
-    }
-}
+
