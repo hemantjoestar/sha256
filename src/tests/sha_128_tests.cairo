@@ -2,6 +2,7 @@ use serde::Serde;
 use traits::Into;
 use sha::sha::sha_u128::U128Bit32Operations;
 use sha::sha::sha_traits::SHABitOperations;
+use sha::sha::sha_constants::load_round_constants;
 use traits::BitNot;
 use debug::PrintTrait;
 use array::ArrayTrait;
@@ -11,7 +12,7 @@ use option::OptionTrait;
 use clone::Clone;
 
 #[test]
-#[available_gas(100000000)]
+#[available_gas(1000000000)]
 fn prepare_message_schedule() {
     let mut hash_values = ArrayTrait::<u128>::new();
     hash_values.append(0x5be0cd19);
@@ -25,169 +26,158 @@ fn prepare_message_schedule() {
     let mut working_hash = ArrayTrait::<u128>::new();
     working_hash = hash_values.clone();
     // append 48 32 bits
-    let mut joined_bytes = ArrayTrait::<u128>::new();
-    // starknet predefined
-    joined_bytes.append(0x73746172);
-    joined_bytes.append(0x6B776172);
-    joined_bytes.append(0x65206361);
-    joined_bytes.append(0x69726F31);
-    joined_bytes.append(0x80000000);
-    joined_bytes.append(0x0);
-    joined_bytes.append(0x0);
-    joined_bytes.append(0x0);
-    joined_bytes.append(0x0);
-    joined_bytes.append(0x0);
-    joined_bytes.append(0x0);
-    joined_bytes.append(0x0);
-    joined_bytes.append(0x0);
-    joined_bytes.append(0x0);
-    joined_bytes.append(0x0);
-    joined_bytes.append(0x80);
+    let mut bytes = ArrayTrait::<u128>::new();
+    bytes.append(0x43616972_u128);
+    bytes.append(0x6F206973_u128);
+    bytes.append(0x20746865_u128);
+    bytes.append(0x20666972_u128);
+    bytes.append(0x73742054_u128);
+    bytes.append(0x7572696E_u128);
+    bytes.append(0x672D636F_u128);
+    bytes.append(0x6D706C65_u128);
+    bytes.append(0x7465206C_u128);
+    bytes.append(0x616E6775_u128);
+    bytes.append(0x61676520_u128);
+    bytes.append(0x666F7220_u128);
+    bytes.append(0x63726561_u128);
+    bytes.append(0x74696E67_u128);
+    bytes.append(0x2070726F_u128);
+    bytes.append(0x7661626C_u128);
+    bytes.append(0x65207072_u128);
+    bytes.append(0x6F677261_u128);
+    bytes.append(0x6D732066_u128);
+    bytes.append(0x6F722067_u128);
+    bytes.append(0x656E6572_u128);
+    bytes.append(0x616C2063_u128);
+    bytes.append(0x6F6D7075_u128);
+    bytes.append(0x74617469_u128);
+    bytes.append(0x6F6E2E80_u128);
+    bytes.append(0x0_u128);
+    bytes.append(0x0_u128);
+    bytes.append(0x0_u128);
+    bytes.append(0x0_u128);
+    bytes.append(0x0_u128);
+    bytes.append(0x0_u128);
+    bytes.append(0x318_u128);
     // end harcoded
-    let mut inner: usize = 16;
-    loop {
-        if inner == 64_usize {
-            break ();
-        }
-        let sigma_1 = (*(joined_bytes[inner - 15_usize])).rr_7()
-            ^ (*(joined_bytes[inner - 15_usize])).rr_18()
-            ^ ((*(joined_bytes[inner - 15_usize])) / 0x8_u128);
-        let sigma_2 = (*(joined_bytes[inner - 2_usize])).rr_17()
-            ^ (*(joined_bytes[inner - 2_usize])).rr_19()
-            ^ ((*(joined_bytes[inner - 2_usize])) / 0x400_u128);
-        joined_bytes
-            .append(
-                (*(joined_bytes[inner - 16_usize]))
-                    .wrapping_add(
-                        sigma_1
-                            .wrapping_add((*(joined_bytes[inner - 7_usize])).wrapping_add(sigma_2))
-                    )
-            );
-        inner = inner + 1;
-    };
-
-    inner = 0_usize;
-    let round_constants = load_round_constants();
-    loop {
-        if inner == 64_usize {
-            break ();
-        }
-        let sigma_1 = (*(working_hash[3])).rr_6()
-            ^ (*(working_hash[3])).rr_11()
-            ^ (*(working_hash[3])).rr_25();
-        let choice = (*working_hash[3] & *working_hash[2])
-            ^ ((BitNot::bitnot(*working_hash[3])) & *working_hash[1]);
-        let temp_1 = ((*working_hash[0]))
-            .wrapping_add(
-                sigma_1
-                    .wrapping_add(
-                        choice
-                            .wrapping_add(
-                                (*round_constants[inner]).wrapping_add(*joined_bytes[inner])
-                            ),
-                    )
-            );
-
-        let sigma_0 = (*(working_hash[7])).rr_2()
-            ^ (*(working_hash[7])).rr_13()
-            ^ (*(working_hash[7])).rr_22();
-        let majority = (*working_hash[7] & *working_hash[6])
-            ^ (*working_hash[7] & *working_hash[5])
-            ^ (*working_hash[6] & *working_hash[5]);
-        let temp_2 = sigma_0.wrapping_add(majority);
-
-        working_hash.pop_front();
-        working_hash.append(working_hash.pop_front().unwrap());
-        working_hash.append(working_hash.pop_front().unwrap());
-        working_hash.append(working_hash.pop_front().unwrap());
-        working_hash.append((*working_hash[0]).wrapping_add(temp_1));
-        working_hash.pop_front();
-        working_hash.append(working_hash.pop_front().unwrap());
-        working_hash.append(working_hash.pop_front().unwrap());
-        working_hash.append(working_hash.pop_front().unwrap());
-        working_hash.append(temp_1.wrapping_add(temp_2));
-
-        inner = inner + 1;
-    };
+    assert(bytes.len() % 16_usize == 0, 'byteslen != 16*8 bytes multiple');
 
     let mut output = ArrayTrait::<felt252>::new();
-    inner = 7_usize;
+    let mut output_index = 7_usize;
+
+    let mut outer: usize = 0;
     loop {
-        if inner == 0_usize {
-            output.append(((*hash_values[inner]).wrapping_add(*working_hash[inner])).into());
+        if outer == (bytes.len() / 16_usize) {
             break ();
         }
-        output.append(((*hash_values[inner]).wrapping_add(*working_hash[inner])).into());
 
-        inner = inner - 1;
+        // had to do this since loop MOVES bytes inside
+        let mut joined_bytes = ArrayTrait::<u128>::new();
+        // joined_bytes = bytes.clone();
+        // had to do this since loop MOVES bytes inside
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        joined_bytes.append(bytes.pop_front().unwrap());
+        assert(joined_bytes.len() == 16, 'length check');
+        let mut index: usize = 16;
+        loop {
+            if index == 64_usize {
+                break ();
+            }
+            let sigma_1 = (*(joined_bytes[index - 15_usize])).rr_7()
+                ^ (*(joined_bytes[index - 15_usize])).rr_18()
+                ^ ((*(joined_bytes[index - 15_usize])) / 0x8_u128);
+            let sigma_2 = (*(joined_bytes[index - 2_usize])).rr_17()
+                ^ (*(joined_bytes[index - 2_usize])).rr_19()
+                ^ ((*(joined_bytes[index - 2_usize])) / 0x400_u128);
+            joined_bytes
+                .append(
+                    (*(joined_bytes[index - 16_usize]))
+                        .wrapping_add(
+                            sigma_1
+                                .wrapping_add(
+                                    (*(joined_bytes[index - 7_usize])).wrapping_add(sigma_2)
+                                )
+                        )
+                );
+            index = index + 1;
+        };
+
+        index = 0_usize;
+        let round_constants = load_round_constants();
+        loop {
+            if index == 64_usize {
+                break ();
+            }
+            let sigma_1 = (*(working_hash[3])).rr_6()
+                ^ (*(working_hash[3])).rr_11()
+                ^ (*(working_hash[3])).rr_25();
+            let choice = (*working_hash[3] & *working_hash[2])
+                ^ ((BitNot::bitnot(*working_hash[3])) & *working_hash[1]);
+            let temp_1 = ((*working_hash[0]))
+                .wrapping_add(
+                    sigma_1
+                        .wrapping_add(
+                            choice
+                                .wrapping_add(
+                                    (*round_constants[index]).wrapping_add(*joined_bytes[index])
+                                ),
+                        )
+                );
+
+            let sigma_0 = (*(working_hash[7])).rr_2()
+                ^ (*(working_hash[7])).rr_13()
+                ^ (*(working_hash[7])).rr_22();
+            let majority = (*working_hash[7] & *working_hash[6])
+                ^ (*working_hash[7] & *working_hash[5])
+                ^ (*working_hash[6] & *working_hash[5]);
+            let temp_2 = sigma_0.wrapping_add(majority);
+
+            working_hash.pop_front();
+            working_hash.append(working_hash.pop_front().unwrap());
+            working_hash.append(working_hash.pop_front().unwrap());
+            working_hash.append(working_hash.pop_front().unwrap());
+            working_hash.append((*working_hash[0]).wrapping_add(temp_1));
+            working_hash.pop_front();
+            working_hash.append(working_hash.pop_front().unwrap());
+            working_hash.append(working_hash.pop_front().unwrap());
+            working_hash.append(working_hash.pop_front().unwrap());
+            working_hash.append(temp_1.wrapping_add(temp_2));
+
+            index = index + 1;
+        };
+        outer = outer + 1_usize;
     };
+
+    loop {
+        if output_index == 0_usize {
+            output.append(((*hash_values[output_index]).wrapping_add(*working_hash[output_index])).into());
+            break ();
+        }
+        output.append(((*hash_values[output_index]).wrapping_add(*working_hash[output_index])).into());
+
+        output_index = output_index - 1;
+    };
+    assert(*output[0] == 2541875948,'final_hash_0_index check');
+    assert(*output[1] == 3479205334,'final_hash_1_index check');
+    assert(*output[2] == 2534622915,'final_hash_2_index check');
+    assert(*output[3] == 1021255763,'final_hash_3_index check');
+    assert(*output[4] == 2026962479,'final_hash_4_index check');
+    assert(*output[5] == 1611312724,'final_hash_5_index check');
+    assert(*output[6] == 2207786822,'final_hash_6_index check');
+    assert(*output[7] == 3523740160,'final_hash_7_index check');
 }
 
-fn load_round_constants() -> Array<u128> {
-    let mut round_constants_array = ArrayTrait::new();
-    round_constants_array.append(0x428a2f98);
-    round_constants_array.append(0x71374491);
-    round_constants_array.append(0xb5c0fbcf);
-    round_constants_array.append(0xe9b5dba5);
-    round_constants_array.append(0x3956c25b);
-    round_constants_array.append(0x59f111f1);
-    round_constants_array.append(0x923f82a4);
-    round_constants_array.append(0xab1c5ed5);
-    round_constants_array.append(0xd807aa98);
-    round_constants_array.append(0x12835b01);
-    round_constants_array.append(0x243185be);
-    round_constants_array.append(0x550c7dc3);
-    round_constants_array.append(0x72be5d74);
-    round_constants_array.append(0x80deb1fe);
-    round_constants_array.append(0x9bdc06a7);
-    round_constants_array.append(0xc19bf174);
-    round_constants_array.append(0xe49b69c1);
-    round_constants_array.append(0xefbe4786);
-    round_constants_array.append(0x0fc19dc6);
-    round_constants_array.append(0x240ca1cc);
-    round_constants_array.append(0x2de92c6f);
-    round_constants_array.append(0x4a7484aa);
-    round_constants_array.append(0x5cb0a9dc);
-    round_constants_array.append(0x76f988da);
-    round_constants_array.append(0x983e5152);
-    round_constants_array.append(0xa831c66d);
-    round_constants_array.append(0xb00327c8);
-    round_constants_array.append(0xbf597fc7);
-    round_constants_array.append(0xc6e00bf3);
-    round_constants_array.append(0xd5a79147);
-    round_constants_array.append(0x06ca6351);
-    round_constants_array.append(0x14292967);
-    round_constants_array.append(0x27b70a85);
-    round_constants_array.append(0x2e1b2138);
-    round_constants_array.append(0x4d2c6dfc);
-    round_constants_array.append(0x53380d13);
-    round_constants_array.append(0x650a7354);
-    round_constants_array.append(0x766a0abb);
-    round_constants_array.append(0x81c2c92e);
-    round_constants_array.append(0x92722c85);
-    round_constants_array.append(0xa2bfe8a1);
-    round_constants_array.append(0xa81a664b);
-    round_constants_array.append(0xc24b8b70);
-    round_constants_array.append(0xc76c51a3);
-    round_constants_array.append(0xd192e819);
-    round_constants_array.append(0xd6990624);
-    round_constants_array.append(0xf40e3585);
-    round_constants_array.append(0x106aa070);
-    round_constants_array.append(0x19a4c116);
-    round_constants_array.append(0x1e376c08);
-    round_constants_array.append(0x2748774c);
-    round_constants_array.append(0x34b0bcb5);
-    round_constants_array.append(0x391c0cb3);
-    round_constants_array.append(0x4ed8aa4a);
-    round_constants_array.append(0x5b9cca4f);
-    round_constants_array.append(0x682e6ff3);
-    round_constants_array.append(0x748f82ee);
-    round_constants_array.append(0x78a5636f);
-    round_constants_array.append(0x84c87814);
-    round_constants_array.append(0x8cc70208);
-    round_constants_array.append(0x90befffa);
-    round_constants_array.append(0xa4506ceb);
-    round_constants_array.append(0xbef9a3f7);
-    round_constants_array.append(0xc67178f2);
-    round_constants_array
-}
