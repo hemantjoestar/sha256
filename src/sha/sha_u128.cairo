@@ -16,7 +16,7 @@ use clone::Clone;
 
 fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
     let mut hash_values = load_hash_constants();
-    let mut working_hash = load_hash_constants();
+    let mut working_hash = hash_values.clone();
 
     assert(bytes.len() % 16_usize == 0, 'byteslen != 16*8 bytes multiple');
 
@@ -39,7 +39,6 @@ fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
             joined_bytes.append(bytes.pop_front().unwrap().try_into().unwrap());
             load_bytes_index = load_bytes_index + 1;
         };
-        assert(joined_bytes.len() == 16, 'length check');
         let mut message_loop_index: usize = 16;
         loop {
             if message_loop_index == 64_usize {
@@ -111,55 +110,36 @@ fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
         };
         // TODO :: dont want to load here but getting for hash_values
         // Variable was previously moved. Trait has no implementation in context: core::traits::Copy::<core::array::Array::<core::integer::u128>>
-        hash_values
-            .append(
-                ((hash_values.pop_front().unwrap()).wrapping_add(working_hash.pop_front().unwrap()))
-            );
-        hash_values
-            .append(
-                ((hash_values.pop_front().unwrap()).wrapping_add(working_hash.pop_front().unwrap()))
-            );
-        hash_values
-            .append(
-                ((hash_values.pop_front().unwrap()).wrapping_add(working_hash.pop_front().unwrap()))
-            );
-        hash_values
-            .append(
-                ((hash_values.pop_front().unwrap()).wrapping_add(working_hash.pop_front().unwrap()))
-            );
-        hash_values
-            .append(
-                ((hash_values.pop_front().unwrap()).wrapping_add(working_hash.pop_front().unwrap()))
-            );
-        hash_values
-            .append(
-                ((hash_values.pop_front().unwrap()).wrapping_add(working_hash.pop_front().unwrap()))
-            );
-        hash_values
-            .append(
-                ((hash_values.pop_front().unwrap()).wrapping_add(working_hash.pop_front().unwrap()))
-            );
-        hash_values
-            .append(
-                ((hash_values.pop_front().unwrap()).wrapping_add(working_hash.pop_front().unwrap()))
-            );
+        let mut for_next_iter: usize = 0;
+        loop {
+            if for_next_iter == 8_usize {
+                break ();
+            }
+
+            hash_values
+                .append(
+                    ((hash_values.pop_front().unwrap())
+                        .wrapping_add(working_hash.pop_front().unwrap()))
+                );
+            for_next_iter = for_next_iter + 1_usize;
+        };
         outer_loop = outer_loop + 1_usize;
     };
 
     let mut output = ArrayTrait::<felt252>::new();
-
-    let mut index = 7_usize;
+    let mut unreverse = 7_usize;
     loop {
-        if index == 0_usize {
-            output.append((*hash_values[index]).into());
+        if unreverse == 0_usize {
+            output.append((*hash_values[unreverse]).into());
             break ();
         }
-        output.append((*hash_values[index]).into());
+        output.append((*hash_values[unreverse]).into());
 
-        index = index - 1;
+        unreverse = unreverse - 1_usize;
     };
     output
 }
+
 impl U128Bit32Operations of SHABitOperations<u128> {
     fn wrapping_add(self: u128, other: u128) -> u128 {
         u128_wrapping_add(self, other) & 0xFFFFFFFF
