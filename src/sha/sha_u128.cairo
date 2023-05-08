@@ -182,36 +182,4 @@ impl U128Bit32Operations of SHABitOperations<u128> {
         (self & 0xFE000000) / 0x2000000 | (self & 0x1FFFFFF) * 0x80
     }
 }
-// impl SHASerde of Serde<Array<u128>> {
-//     fn serialize(self: @Array<u128>, ref output: Array<felt252>) {
-//         self.len().serialize(ref output);
-//         serialize_array_helper(self.span(), ref output);
-//     }
-//     fn deserialize(ref serialized: Span<felt252>) -> Option<Array<u128>> {
-//         let mut arr = ArrayTrait::new();
-//         deserialize_array_helper(ref serialized, arr)
-//     }
-// }
-// fn deserialize_array_helper<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(
-//     ref serialized: Span<felt252>, mut curr_output: Array<T>
-// ) -> Option<Array<T>> {
-//     if serialized.len() == 0 {
-//         return Option::Some(curr_output);
-//     }
-//     curr_output.append(TSerde::deserialize(ref serialized)?);
-//     deserialize_array_helper(ref serialized, curr_output)
-// }
-
-// fn serialize_array_helper<T, impl TSerde: Serde<T>, impl TDrop: Drop<T>>(
-//     mut input: Span<T>, ref output: Array<felt252>
-// ) {
-//     match input.pop_front() {
-//         Option::Some(value) => {
-//             value.serialize(ref output);
-//             serialize_array_helper(input, ref output);
-//         },
-//         Option::None(_) => {},
-//     }
-// }
-
 
