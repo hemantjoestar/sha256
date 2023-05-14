@@ -1,15 +1,6 @@
-use serde::Serde;
-use traits::Into;
-use sha::sha::sha_u128::SHA_func;
-use sha::sha::sha_traits::SHABitOperations;
-use sha::sha::sha_constants::load_round_constants;
-use traits::BitNot;
-use debug::PrintTrait;
+use sha::sha::sha_u128::{get_256_bit_hash, SHA_func};
 use array::ArrayTrait;
-use testing::get_available_gas;
-use box::BoxTrait;
-use option::OptionTrait;
-use clone::Clone;
+use debug::PrintTrait;
 
 // let test_str = b"starknet";
 #[test]
@@ -41,6 +32,10 @@ fn test_less_than_512_bits() {
     assert(*output[5] == 816016193, 'final_hash_5_index check');
     assert(*output[6] == 2467408739, 'final_hash_6_index check');
     assert(*output[7] == 3342985673, 'final_hash_7_index check');
+    let hash: u256 = get_256_bit_hash(output.span());
+    hash.print();
+    let precomputed_hash: u256 = 0xfd187671a1d5f861b976693a967019778bb2aaac30a36b419311ab63c741e9c9;
+    assert(hash == precomputed_hash, 'Hash starknet Match fail');
 }
 
 // let test_str = b"Cairo is the first Turing-complete language for creating provable programs for general computation.";
@@ -89,6 +84,9 @@ fn test_more_than_512_bits() {
     assert(*output[5] == 1611312724, 'final_hash_5_index check');
     assert(*output[6] == 2207786822, 'final_hash_6_index check');
     assert(*output[7] == 3523740160, 'final_hash_7_index check');
+    let hash: u256 = get_256_bit_hash(output.span());
+    let precomputed_hash: u256 = 0x9781f2eccf6075d6971346c33cdf205378d0fe2f600aae5483982746d2080200;
+    assert(hash == precomputed_hash, 'Hash > 512 bits Match fail');
 }
 
 // Cairo Wwhitepaper Abstract
@@ -217,4 +215,7 @@ fn should_pass() {
     assert(*output[5] == 1847243362, 'final_hash_5_index check');
     assert(*output[6] == 3282689944, 'final_hash_6_index check');
     assert(*output[7] == 579914429, 'final_hash_7_index check');
+    let hash: u256 = get_256_bit_hash(output.span());
+    let precomputed_hash: u256 = 0x55e6d9b9697db24aa6b143d8f4d0866a44748a876e1ab262c3a9df982290cabd;
+    assert(hash == precomputed_hash, 'Hash CWP Match fail');
 }

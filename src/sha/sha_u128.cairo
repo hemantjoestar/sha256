@@ -1,6 +1,7 @@
 use sha::sha::sha_traits::SHABitOperations;
-use integer::u128_wrapping_add;
+use integer::{u256_from_felt252, u128_wrapping_add};
 use array::ArrayTrait;
+use array::SpanTrait;
 use serde::Serde;
 use traits::Into;
 use traits::TryInto;
@@ -10,6 +11,28 @@ use traits::BitNot;
 use option::OptionTrait;
 use clone::Clone;
 
+fn get_256_bit_hash(mut input: Span<felt252>) -> u256 {
+    let mut output = 0_u256;
+    // 8 times since 32 bit extraction
+    output = output | u256_from_felt252(*(input.pop_back().unwrap()));
+    output = output | (u256_from_felt252(*(input.pop_back().unwrap())) * 0x100000000_u256);
+    output = output | (u256_from_felt252(*(input.pop_back().unwrap())) * 0x10000000000000000_u256);
+    output = output
+        | (u256_from_felt252(*(input.pop_back().unwrap())) * 0x1000000000000000000000000_u256);
+    output = output
+        | (u256_from_felt252(*(input.pop_back().unwrap()))
+            * 0x100000000000000000000000000000000_u256);
+    output = output
+        | (u256_from_felt252(*(input.pop_back().unwrap()))
+            * 0x10000000000000000000000000000000000000000_u256);
+    output = output
+        | (u256_from_felt252(*(input.pop_back().unwrap()))
+            * 0x1000000000000000000000000000000000000000000000000_u256);
+    output = output
+        | (u256_from_felt252(*(input.pop_back().unwrap()))
+            * 0x100000000000000000000000000000000000000000000000000000000_u256);
+    output
+}
 fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
     assert(bytes.len() % 16_usize == 0, 'byteslen != 16*8 bytes multiple');
 
