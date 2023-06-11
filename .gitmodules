@@ -1,0 +1,3 @@
+[submodule "deps/cairo_utils"]
+	path = deps/cairo_utils
+	url = https://github.com/hemantjoestar/cairo_utils

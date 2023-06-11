@@ -1,2 +1,3 @@
 [crate_roots]
 sha='src'
+cairo_utils='deps/cairo_utils/src'

@@ -7,65 +7,46 @@ use traits::Into;
 use traits::TryInto;
 use sha::sha::sha_constants::load_round_constants;
 use sha::sha::sha_constants::load_hash_constants;
-use traits::BitNot;
 use option::OptionTrait;
+use result::ResultTrait;
 use clone::Clone;
+use debug::PrintTrait;
 
-fn get_256_bit_hash(mut input: Span<felt252>) -> u256 {
-    let mut output = 0_u256;
-    // 8 times since 32 bit extraction
-    output = output | u256_from_felt252(*(input.pop_back().unwrap()));
-    output = output | (u256_from_felt252(*(input.pop_back().unwrap())) * 0x100000000_u256);
-    output = output | (u256_from_felt252(*(input.pop_back().unwrap())) * 0x10000000000000000_u256);
-    output = output
-        | (u256_from_felt252(*(input.pop_back().unwrap())) * 0x1000000000000000000000000_u256);
-    output = output
-        | (u256_from_felt252(*(input.pop_back().unwrap()))
-            * 0x100000000000000000000000000000000_u256);
-    output = output
-        | (u256_from_felt252(*(input.pop_back().unwrap()))
-            * 0x10000000000000000000000000000000000000000_u256);
-    output = output
-        | (u256_from_felt252(*(input.pop_back().unwrap()))
-            * 0x1000000000000000000000000000000000000000000000000_u256);
-    output = output
-        | (u256_from_felt252(*(input.pop_back().unwrap()))
-            * 0x100000000000000000000000000000000000000000000000000000000_u256);
-    output
-}
-fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
-    assert(bytes.len() % 16_usize == 0, 'byteslen != 16*8 bytes multiple');
+// TODO: Put in readme
+// will use u128 since the boolean operations are running using libfuncs and using u64 
+// offers worse performance
 
+fn SHA_func(mut bytes: Span<felt252>) -> Result<Array<felt252>, felt252> {
+    // 512 bits or 16 * 32 bit chunks for each iteration
+    if (bytes.len() % 16_usize != 0) {
+        return Result::Err('Input_length_!=_16');
+    }
     // Using Span resolved issue. check TODO in compression section
+	// Span
     let round_constants = load_round_constants();
+	// Array
     let mut hash_values = load_hash_constants();
-    let mut working_hash = hash_values.clone();
 
-    let loop_until = bytes.len() / 16_usize;
-    let mut outer_loop: usize = 0;
+    // 512 bits or 16 * 32 bit chunks for each iteration
     loop {
-        if outer_loop == loop_until {
-            assert(bytes.len() == 0, 'bytes_pop_check');
+        if bytes.is_empty() {
             break ();
         }
-
-        let mut joined_bytes = ArrayTrait::<u128>::new();
-        // let mut joined_bytes=SHASerde::deserialize(ref throw).unwrap();
-        let mut load_bytes_index: usize = 0;
+        let mut joined_bytes = Default::<Array<u128>>::default();
         loop {
-            if load_bytes_index == 16_usize {
+            if joined_bytes.len() == 16_usize {
                 break ();
             }
-            joined_bytes.append(bytes.pop_front().unwrap().try_into().unwrap());
-            load_bytes_index = load_bytes_index + 1;
+            joined_bytes.append((*bytes.pop_front().unwrap()).try_into().unwrap());
         };
 
+        // Message Loop
         let mut message_loop_index: usize = 16;
         loop {
             if message_loop_index == 64_usize {
                 break ();
             }
-            let sigma_1 = (*(joined_bytes[message_loop_index - 15_usize])).rr_7()
+            let sigma_1 = (*joined_bytes[message_loop_index - 15_usize]).rr_7()
                 ^ (*(joined_bytes[message_loop_index - 15_usize])).rr_18()
                 ^ ((*(joined_bytes[message_loop_index - 15_usize])) / 0x8_u128);
             let sigma_2 = (*(joined_bytes[message_loop_index - 2_usize])).rr_17()
@@ -85,7 +66,7 @@ fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
             message_loop_index = message_loop_index + 1;
         };
 
-        working_hash = hash_values.clone();
+        let mut working_hash = hash_values.clone();
         let mut compression_loop_index = 0_usize;
         // TODO: Used Span. need to measure if better against Array. Also span resolved issue below
         // TODO: Not needed to be loaded repeatedly. but loop moved problem. unroll didnt work
@@ -98,7 +79,7 @@ fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
                 ^ (*(working_hash[3])).rr_11()
                 ^ (*(working_hash[3])).rr_25();
             let choice = (*working_hash[3] & *working_hash[2])
-                ^ ((BitNot::bitnot(*working_hash[3])) & *working_hash[1]);
+                ^ ((~(*working_hash[3])) & *working_hash[1]);
             let temp_1 = ((*working_hash[0]))
                 .wrapping_add(
                     sigma_1
@@ -132,8 +113,6 @@ fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
 
             compression_loop_index = compression_loop_index + 1;
         };
-        // TODO :: dont want to load here but getting for hash_values
-        // Variable was previously moved. Trait has no implementation in context: core::traits::Copy::<core::array::Array::<core::integer::u128>>
         let mut for_next_iter: usize = 0;
         loop {
             if for_next_iter == 8_usize {
@@ -147,10 +126,9 @@ fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
                 );
             for_next_iter = for_next_iter + 1_usize;
         };
-        outer_loop = outer_loop + 1_usize;
     };
 
-    let mut output = ArrayTrait::<felt252>::new();
+    let mut output = Default::default();
     let mut unreverse = 7_usize;
     loop {
         if unreverse == 0_usize {
@@ -161,7 +139,7 @@ fn SHA_func(mut bytes: Array<felt252>) -> Array<felt252> {
 
         unreverse = unreverse - 1_usize;
     };
-    output
+    Result::Ok(output)
 }
 
 impl U128Bit32Operations of SHABitOperations<u128> {

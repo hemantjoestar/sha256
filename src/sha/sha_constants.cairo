@@ -2,7 +2,7 @@ use array::ArrayTrait;
 use option::OptionTrait;
 
 fn load_hash_constants() -> Array<u128> {
-    let mut hash_values = ArrayTrait::<u128>::new();
+    let mut hash_values: Array::<u128> = Default::default();
     hash_values.append(0x5be0cd19);
     hash_values.append(0x1f83d9ab);
     hash_values.append(0x9b05688c);
@@ -15,7 +15,7 @@ fn load_hash_constants() -> Array<u128> {
 }
 
 fn load_round_constants() -> Span<u128> {
-    let mut round_constants_array = ArrayTrait::<u128>::new();
+    let mut round_constants_array: Array::<u128> = Default::default();
     round_constants_array.append(0x428a2f98);
     round_constants_array.append(0x71374491);
     round_constants_array.append(0xb5c0fbcf);
